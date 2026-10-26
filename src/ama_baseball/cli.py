@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("--teams にチームIDを指定してください")
         return 2
 
-    # GitHub Actions では環境変数で渡すため、既に設定済みの値を .env で上書きしない
+    # 実行時に環境変数で一時的に切り替えられるよう、既に設定済みの値を .env で上書きしない
     load_dotenv(find_dotenv(usecwd=True), override=False)
     spreadsheet_id = os.environ.get("SPREADSHEET_ID", "").strip()
     credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
