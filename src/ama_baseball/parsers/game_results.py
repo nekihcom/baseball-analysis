@@ -25,16 +25,13 @@ def parse_game_results(html: str) -> GamePage:
         if date is None:
             raise ParseError(f"試合日を読み取れません: {date_text!r}")
         opponent = link.select_one("p.opponent")
-        score = cell_text(link.select_one("p.score"))
-        walk_off = score.endswith("x")
         rows.append(
             {
                 "日時": to_iso_date(*date.groups()),
                 "試合属性": cell_text(opponent.select_one("span.label") if opponent else None),
                 "対戦チーム": own_text(opponent),
-                "スコア": score.removesuffix("x"),
-                "サヨナラ": "TRUE" if walk_off else "FALSE",
                 "勝敗": cell_text(link.select_one("p.result")),
+                "スコア": cell_text(link.select_one("p.score")),
             }
         )
 

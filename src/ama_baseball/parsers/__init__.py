@@ -10,7 +10,7 @@ from ama_baseball.parsers.player_stats import (
 from ama_baseball.parsers.schedule import SCHEDULE_COLUMNS, parse_schedule
 from ama_baseball.parsers.team_stats import TEAM_STATS_HEADERS, parse_team_stats
 
-GAME_RESULTS_COLUMNS = ("日時", "試合属性", "対戦チーム", "スコア", "サヨナラ", "勝敗")
+GAME_RESULTS_COLUMNS = ("日時", "試合属性", "対戦チーム", "勝敗", "スコア")
 
 __all__ = [
     "BATTER_HEADERS",

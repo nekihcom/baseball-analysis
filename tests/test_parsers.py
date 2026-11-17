@@ -35,7 +35,7 @@ class TestSchedule:
 
 
 class TestGameResults:
-    def test_試合を取り出しサヨナラを分離する(self, load_fixture):
+    def test_試合を取り出しスコアはサヨナラのxを残す(self, load_fixture):
         page = parse_game_results(load_fixture("game_page1.html"))
 
         assert len(page.rows) == 20
@@ -43,12 +43,11 @@ class TestGameResults:
             "日時": "2026-10-11",
             "試合属性": "練習試合",
             "対戦チーム": "Keriers/ケリアーズ",
-            "スコア": "6-9",
-            "サヨナラ": "TRUE",
             "勝敗": "勝ち",
+            "スコア": "6-9x",
         }
         assert page.rows[-1]["日時"] == "2024-09-29"
-        assert page.rows[-1]["サヨナラ"] == "FALSE"
+        assert not page.rows[-1]["スコア"].endswith("x")
 
     def test_次ページの有無と件数表示を読み取る(self, load_fixture):
         page = parse_game_results(load_fixture("game_page2.html"))

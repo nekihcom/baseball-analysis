@@ -85,6 +85,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
         yearly=False,
         collect=lambda tc, _: tc.game_results(),
         sort_rows=_sort_by_date,
+        obsolete_columns=("サヨナラ",),
     ),
     DataDefinition(
         key="team_stats",
