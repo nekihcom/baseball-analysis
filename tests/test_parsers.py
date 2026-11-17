@@ -85,10 +85,10 @@ class TestGameResults:
 
 
 class TestTeamStats:
-    def test_年度行と通算行を取り出す(self, load_fixture):
+    def test_年度行を取り出し通算行は捨てる(self, load_fixture):
         rows = parse_team_stats(load_fixture("stats.html"))
 
-        assert [r["年"] for r in rows] == ["2026", "2025", "2024", "2023", "2022", "通算"]
+        assert [r["年"] for r in rows] == ["2026", "2025", "2024", "2023", "2022"]
         assert rows[0]["勝率"] == ".500"
         assert rows[0]["打率"] == ".338"
 
@@ -96,15 +96,6 @@ class TestTeamStats:
         rows = parse_team_stats(load_fixture("stats.html"))
 
         assert rows[0]["防御率"] == "0.88"
-
-    def test_通算行の空欄をhidden値の合計から計算する(self, load_fixture):
-        total = parse_team_stats(load_fixture("stats.html"))[-1]
-
-        assert total["試合"] == "47"
-        assert total["打率"] == ".250"
-        assert total["本塁打"] == "16"
-        assert total["盗塁"] == "80"
-        assert total["防御率"] == "3.50"
 
     def test_投球回が0なら防御率はー(self):
         html = """

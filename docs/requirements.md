@@ -77,7 +77,7 @@
 | --- | --- | --- | --- |
 | FR-10 | スケジュール | `https://teams.one/teams/{team}/plan` | 「予定」のみ取得する。「過去」（`/plan/past_index`）は取得しない |
 | FR-11 | 試合結果 | `https://teams.one/teams/{team}/game` | 1 ページ 20 件のページ送り（`?page=n`）があるため、全ページを取得する。試合属性・大会名などの絞り込みは行わず、全試合を取得する |
-| FR-12 | チーム成績 | `https://teams.one/teams/{team}/stats` | 年度別行と通算行を取得する |
+| FR-12 | チーム成績 | `https://teams.one/teams/{team}/stats` | 年度別行を取得する（通算行は取得しない） |
 | FR-13 | 打者年度別成績 | `https://teams.one/teams/{team}/stats/batters_table?search_result%5Bgame_date%5D={year}&...&search_result%5Bunreached%5D=true` | 規定未到達者を含める。クエリの全体は CLAUDE.md の定義に従う |
 | FR-14 | 投手年度別成績 | `https://teams.one/teams/{team}/stats/pitchers_table?search_result%5Bgame_date%5D={year}&...&search_result%5Bunreached%5D=true` | 同上 |
 
