@@ -56,12 +56,6 @@ def run(
     for name in missing:
         logger.warning("マスタ %s が無いため、シートの該当列を空欄で出力します", name)
 
-    try:
-        _backup(currents, store, masters, data_dir, definitions)
-    except Exception as e:
-        logger.error("バックアップに失敗したため中止します: %s: %s", type(e).__name__, e)
-        return 1
-
     tables = {d.key: currents[d.key] or Table(columns=list(d.columns)) for d in definitions}
     fetcher.load_robots()
 
@@ -79,19 +73,6 @@ def run(
     failed = write_failures or any(not o.ok for team_outcomes in outcomes.values() for o in team_outcomes.values())
     logger.info("処理を終了します: %s", "失敗あり" if failed else "すべて成功")
     return 1 if failed else 0
-
-
-def _backup(currents: dict[str, Table | None], store: Store, masters: Masters, data_dir: Path, definitions) -> None:
-    backup_dir = data_dir / "bks"
-    backup_dir.mkdir(parents=True, exist_ok=True)
-    for d in definitions:
-        table = currents[d.key]
-        if table is None:
-            logger.info("現行 CSV が無いため %s のバックアップを作成しません", d.sheet_name)
-            continue
-        write_csv(backup_dir / d.backup_csv_name, table)
-        store.replace(d.backup_sheet_name, to_sheet(table, masters))
-        logger.info("バックアップを作成しました: %s %d 件", d.backup_sheet_name, len(table.rows))
 
 
 def _collect_team(team, all_years, current_year, collected_at, fetcher, tables, definitions) -> dict[str, Outcome]:

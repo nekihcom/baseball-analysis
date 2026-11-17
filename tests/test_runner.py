@@ -40,7 +40,7 @@ def _orcas_pages(load_fixture) -> dict[str, str]:
     return pages
 
 
-def test_初回実行でシートとCSVを作成しバックアップは作らない(tmp_path, load_fixture):
+def test_初回実行でシートとCSVを作成する(tmp_path, load_fixture):
     _write_masters(tmp_path)
     store = FakeStore()
 
@@ -62,11 +62,10 @@ def test_初回実行でシートとCSVを作成しバックアップは作ら�
             ["チーム", "日時", "種別", "タイトル", "収集日時"],
             ["orcas", "2026-11-08", "練習試合", "活動日", "2026-10-26T12:00:00+09:00"],
         ]
-    assert list((tmp_path / "bks").iterdir()) == []
     assert code == 0
 
 
-def test_既存CSVをバックアップし失敗したデータは既存行を維持する(tmp_path, load_fixture):
+def test_失敗したデータは既存行を維持する(tmp_path, load_fixture):
     existing = Table(
         columns=list(SCHEDULE.columns),
         rows=[
@@ -83,11 +82,10 @@ def test_既存CSVをバックアップし失敗したデータは既存行を�
     code = run(["orcas"], False, store, FakeFetcher(pages), tmp_path, STARTED_AT)
 
     assert code == 1
-    assert read_csv(tmp_path / "bks" / "schedule.bk.csv").rows == existing.rows
-    assert [(r["チーム"], r["タイトル"]) for r in store.sheets["スケジュール（バックアップ）"].rows] == [("ORCAS", "旧"), ("", "他")]
     assert [(r["チーム"], r["タイトル"]) for r in read_csv(tmp_path / "schedule.csv").rows] == [("orcas", "旧"), ("other", "他")]
     assert [r["タイトル"] for r in store.sheets["スケジュール"].rows] == ["旧", "他"]
-    assert "試合結果（バックアップ）" not in store.sheets
+    assert set(store.sheets) == {d.sheet_name for d in DEFINITIONS}
+    assert not (tmp_path / "bks").exists()
 
 
 def test_1チームの失敗で他チームの処理を止めない(tmp_path, load_fixture):
@@ -97,19 +95,6 @@ def test_1チームの失敗で他チームの処理を止めない(tmp_path, lo
     run(["missing", "orcas"], False, store, FakeFetcher(pages), tmp_path, STARTED_AT)
 
     assert {r["チーム"] for r in read_csv(tmp_path / "schedule.csv").rows} == {"orcas"}
-
-
-def test_バックアップの書き込みに失敗したら収集せず中止する(tmp_path, load_fixture):
-    write_csv(tmp_path / "schedule.csv", Table(columns=list(SCHEDULE.columns)))
-    store = FakeStore(fail_on_replace={"スケジュール（バックアップ）"})
-    fetcher = FakeFetcher(_orcas_pages(load_fixture))
-
-    code = run(["orcas"], False, store, fetcher, tmp_path, STARTED_AT)
-
-    assert code == 1
-    assert fetcher.requested == []
-    assert not (tmp_path / "game_results.csv").exists()
-
 
 
 def test_シートにはマスタで変換した値を出しCSVには元の値を残す(tmp_path, load_fixture):

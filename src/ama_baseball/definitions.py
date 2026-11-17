@@ -33,14 +33,6 @@ class DataDefinition:
     def csv_name(self) -> str:
         return f"{self.key}.csv"
 
-    @property
-    def backup_csv_name(self) -> str:
-        return f"{self.key}.bk.csv"
-
-    @property
-    def backup_sheet_name(self) -> str:
-        return f"{self.sheet_name}（バックアップ）"
-
 
 def _number_or_none(value: str) -> int | None:
     return int(value) if value.isdigit() else None
