@@ -27,6 +27,7 @@ class DataDefinition:
     yearly: bool
     collect: Callable[[TeamCollector, list[int] | None], list[Row]]
     sort_rows: Callable[[list[Row]], list[Row]]
+    obsolete_columns: tuple[str, ...] = ()
 
     @property
     def csv_name(self) -> str:
@@ -75,6 +76,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
         yearly=False,
         collect=lambda tc, _: tc.schedule(),
         sort_rows=_sort_by_date,
+        obsolete_columns=("予定詳細ID",),
     ),
     DataDefinition(
         key="game_results",

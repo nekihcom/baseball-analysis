@@ -48,20 +48,19 @@ def test_初回実行でシートとCSVを作成しバックアップは作ら�
 
     assert set(store.sheets) == {d.sheet_name for d in DEFINITIONS}
     schedule = store.sheets["スケジュール"]
-    assert schedule.columns == ["チーム", "日時", "種別", "タイトル", "予定詳細ID", "収集日時"]
+    assert schedule.columns == ["チーム", "日時", "種別", "タイトル", "収集日時"]
     assert schedule.rows[0] == {
         "チーム": "ORCAS",
         "収集日時": "2026-10-26T12:00:00+09:00",
         "日時": "2026-11-08",
         "種別": "練習試合",
         "タイトル": "活動日",
-        "予定詳細ID": "388787",
     }
     assert {r["年度"] for r in store.sheets["打者年度別成績"].rows} == {"2022", "2023", "2024", "2025", "2026"}
     with (tmp_path / "schedule.csv").open(encoding="utf-8", newline="") as f:
         assert list(csv.reader(f))[:2] == [
-            ["チーム", "日時", "種別", "タイトル", "予定詳細ID", "収集日時"],
-            ["orcas", "2026-11-08", "練習試合", "活動日", "388787", "2026-10-26T12:00:00+09:00"],
+            ["チーム", "日時", "種別", "タイトル", "収集日時"],
+            ["orcas", "2026-11-08", "練習試合", "活動日", "2026-10-26T12:00:00+09:00"],
         ]
     assert list((tmp_path / "bks").iterdir()) == []
     assert code == 0
@@ -71,8 +70,8 @@ def test_既存CSVをバックアップし失敗したデータは既存行を�
     existing = Table(
         columns=list(SCHEDULE.columns),
         rows=[
-            {"チーム": "orcas", "収集日時": "old", "日時": "2026-01-01", "種別": "", "タイトル": "旧", "予定詳細ID": "1"},
-            {"チーム": "other", "収集日時": "old", "日時": "2026-01-02", "種別": "", "タイトル": "他", "予定詳細ID": "2"},
+            {"チーム": "orcas", "収集日時": "old", "日時": "2026-01-01", "種別": "", "タイトル": "旧"},
+            {"チーム": "other", "収集日時": "old", "日時": "2026-01-02", "種別": "", "タイトル": "他"},
         ],
     )
     write_csv(tmp_path / "schedule.csv", existing)

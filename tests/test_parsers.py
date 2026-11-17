@@ -18,8 +18,8 @@ class TestSchedule:
         rows = parse_schedule(load_fixture("plan.html"))
 
         assert len(rows) == 3
-        assert rows[0] == {"日時": "2026-11-08", "種別": "練習試合", "タイトル": "活動日", "予定詳細ID": "388787"}
-        assert rows[2] == {"日時": "2026-12-13", "種別": "練習試合", "タイトル": "仮・活動日", "予定詳細ID": "388789"}
+        assert rows[0] == {"日時": "2026-11-08", "種別": "練習試合", "タイトル": "活動日"}
+        assert rows[2] == {"日時": "2026-12-13", "種別": "練習試合", "タイトル": "仮・活動日"}
 
     def test_予定が無いページは0件(self):
         assert parse_schedule('<div id="future_plans"><div class="planLists"></div></div>') == []

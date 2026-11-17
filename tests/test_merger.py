@@ -34,15 +34,15 @@ class TestReplaceScope:
         current = Table(
             columns=list(d.columns),
             rows=[
-                {"チーム": "orcas", "日時": "2026-01-01", "予定詳細ID": "1"},
-                {"チーム": "orcas", "日時": "2026-02-01", "予定詳細ID": "2"},
-                {"チーム": "other", "日時": "2026-01-01", "予定詳細ID": "3"},
+                {"チーム": "orcas", "日時": "2026-01-01"},
+                {"チーム": "orcas", "日時": "2026-02-01"},
+                {"チーム": "other", "日時": "2026-01-01"},
             ],
         )
 
-        merged = merge(current, [{"チーム": "orcas", "日時": "2026-03-01", "予定詳細ID": "4"}], "orcas", None, d)
+        merged = merge(current, [{"チーム": "orcas", "日時": "2026-03-01"}], "orcas", None, d)
 
-        assert sorted(r["予定詳細ID"] for r in merged.rows) == ["3", "4"]
+        assert sorted((r["チーム"], r["日時"]) for r in merged.rows) == [("orcas", "2026-03-01"), ("other", "2026-01-01")]
 
 
 class TestColumns:
@@ -55,6 +55,18 @@ class TestColumns:
         assert merged.columns == [*d.columns[:-1], "旧列", "新列", "収集日時"]
         assert merged.rows[0]["新列"] == ""
         assert merged.rows[1]["旧列"] == ""
+
+    def test_廃止した列は現行データにあっても取り除く(self):
+        d = DEFS["schedule"]
+        current = Table(
+            columns=[*d.columns[:-1], "予定詳細ID", "収集日時"],
+            rows=[{"チーム": "other", "日時": "2026-01-01", "予定詳細ID": "1"}],
+        )
+
+        merged = merge(current, [], "orcas", None, d)
+
+        assert merged.columns == list(d.columns)
+        assert "予定詳細ID" not in merged.rows[0]
 
 
 class TestSort:
