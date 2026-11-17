@@ -18,8 +18,8 @@ class TestSchedule:
         rows = parse_schedule(load_fixture("plan.html"))
 
         assert len(rows) == 3
-        assert rows[0] == {"日時": "2026-11-08", "種別": "練習試合", "タイトル": "活動日", "予定詳細ID": "388787"}
-        assert rows[2] == {"日時": "2026-12-13", "種別": "練習試合", "タイトル": "仮・活動日", "予定詳細ID": "388789"}
+        assert rows[0] == {"日時": "2026-11-08", "種別": "練習試合", "タイトル": "活動日"}
+        assert rows[2] == {"日時": "2026-12-13", "種別": "練習試合", "タイトル": "仮・活動日"}
 
     def test_予定が無いページは0件(self):
         assert parse_schedule('<div id="future_plans"><div class="planLists"></div></div>') == []
@@ -35,7 +35,7 @@ class TestSchedule:
 
 
 class TestGameResults:
-    def test_試合を取り出しサヨナラを分離する(self, load_fixture):
+    def test_試合を取り出しスコアはサヨナラのxを残す(self, load_fixture):
         page = parse_game_results(load_fixture("game_page1.html"))
 
         assert len(page.rows) == 20
@@ -43,12 +43,28 @@ class TestGameResults:
             "日時": "2026-10-11",
             "試合属性": "練習試合",
             "対戦チーム": "Keriers/ケリアーズ",
-            "スコア": "6-9",
-            "サヨナラ": "TRUE",
             "勝敗": "勝ち",
+            "スコア": "6-9x",
         }
         assert page.rows[-1]["日時"] == "2024-09-29"
-        assert page.rows[-1]["サヨナラ"] == "FALSE"
+        assert not page.rows[-1]["スコア"].endswith("x")
+
+    def test_雨中止の試合はスコアをハイフンにする(self):
+        html = """
+        <div class="gameListContainer"><ul class="contentList">
+          <li><a class="toDetailLink" href="/teams/x/game/1">
+            <p class="date">2017/7/30<span class="week">（日）</span></p>
+            <p class="opponent"><span class="label">公式戦</span>TOKYO☆MONSTERS</p>
+            <p class="score">0-0</p>
+            <p class="result"><span class="label">雨中止</span></p>
+          </a></li>
+        </ul></div>
+        """
+
+        page = parse_game_results(html)
+
+        assert page.rows[0]["勝敗"] == "雨中止"
+        assert page.rows[0]["スコア"] == "-"
 
     def test_次ページの有無と件数表示を読み取る(self, load_fixture):
         page = parse_game_results(load_fixture("game_page2.html"))
@@ -69,10 +85,10 @@ class TestGameResults:
 
 
 class TestTeamStats:
-    def test_年度行と通算行を取り出す(self, load_fixture):
+    def test_年度行を取り出し通算行は捨てる(self, load_fixture):
         rows = parse_team_stats(load_fixture("stats.html"))
 
-        assert [r["年"] for r in rows] == ["2026", "2025", "2024", "2023", "2022", "通算"]
+        assert [r["年"] for r in rows] == ["2026", "2025", "2024", "2023", "2022"]
         assert rows[0]["勝率"] == ".500"
         assert rows[0]["打率"] == ".338"
 
@@ -80,15 +96,6 @@ class TestTeamStats:
         rows = parse_team_stats(load_fixture("stats.html"))
 
         assert rows[0]["防御率"] == "0.88"
-
-    def test_通算行の空欄をhidden値の合計から計算する(self, load_fixture):
-        total = parse_team_stats(load_fixture("stats.html"))[-1]
-
-        assert total["試合"] == "47"
-        assert total["打率"] == ".250"
-        assert total["本塁打"] == "16"
-        assert total["盗塁"] == "80"
-        assert total["防御率"] == "3.50"
 
     def test_投球回が0なら防御率はー(self):
         html = """

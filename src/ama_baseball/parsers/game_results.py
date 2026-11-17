@@ -5,6 +5,7 @@ from ama_baseball.parsers.common import ParseError, cell_text, make_soup, own_te
 
 _DATE = re.compile(r"(\d{4})/(\d{1,2})/(\d{1,2})")
 _TOTAL = re.compile(r"全\s*(\d+)\s*件")
+_RAINED_OUT = "雨中止"
 
 
 @dataclass
@@ -25,16 +26,14 @@ def parse_game_results(html: str) -> GamePage:
         if date is None:
             raise ParseError(f"試合日を読み取れません: {date_text!r}")
         opponent = link.select_one("p.opponent")
-        score = cell_text(link.select_one("p.score"))
-        walk_off = score.endswith("x")
+        result = cell_text(link.select_one("p.result"))
         rows.append(
             {
                 "日時": to_iso_date(*date.groups()),
                 "試合属性": cell_text(opponent.select_one("span.label") if opponent else None),
                 "対戦チーム": own_text(opponent),
-                "スコア": score.removesuffix("x"),
-                "サヨナラ": "TRUE" if walk_off else "FALSE",
-                "勝敗": cell_text(link.select_one("p.result")),
+                "勝敗": result,
+                "スコア": "-" if result == _RAINED_OUT else cell_text(link.select_one("p.score")),
             }
         )
 
