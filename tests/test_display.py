@@ -45,6 +45,45 @@ def test_変換元のテーブルを変更しない():
     assert table.rows == [_batter("orcas", "1", "たなか")]
 
 
+def _pitcher(innings: str, strikeouts: str = "17", hits: str = "22", walks: str = "9") -> dict[str, str]:
+    return {"投球回": innings, "被安打": hits, "奪三振": strikeouts, "与四球": walks, "与死球": "2", "ボーク": "0"}
+
+
+def test_投手成績に奪三振率とWHIPの列を追加する():
+    table = Table(columns=list(_pitcher("")), rows=[_pitcher("18回0/3")])
+
+    converted = to_sheet(table, MASTERS)
+
+    assert converted.columns == ["投球回", "被安打", "奪三振", "奪三振率", "与四球", "与死球", "WHIP", "ボーク"]
+    assert converted.rows[0]["奪三振率"] == "6.61"
+    assert converted.rows[0]["WHIP"] == "1.722"
+
+
+def test_投球回の端数をアウト数で計算する():
+    converted = to_sheet(Table(columns=list(_pitcher("")), rows=[_pitcher("3回1/3", strikeouts="2", hits="6", walks="2")]), MASTERS)
+
+    assert converted.rows[0]["奪三振率"] == "4.20"
+    assert converted.rows[0]["WHIP"] == "2.400"
+
+
+def test_投球回が0なら奪三振率とWHIPはー():
+    converted = to_sheet(Table(columns=list(_pitcher("")), rows=[_pitcher("0回0/3")]), MASTERS)
+
+    assert (converted.rows[0]["奪三振率"], converted.rows[0]["WHIP"]) == ("ー", "ー")
+
+
+def test_投球回を読み取れなければ奪三振率とWHIPは空欄():
+    converted = to_sheet(Table(columns=list(_pitcher("")), rows=[_pitcher("")]), MASTERS)
+
+    assert (converted.rows[0]["奪三振率"], converted.rows[0]["WHIP"]) == ("", "")
+
+
+def test_投手成績の列を持たないテーブルには列を追加しない():
+    table = Table(columns=["チーム", "日時"], rows=[{"チーム": "orcas", "日時": "2026-11-08"}])
+
+    assert to_sheet(table, MASTERS).columns == ["チーム", "日時"]
+
+
 def test_マスタCSVを読み込む(tmp_path):
     write_csv(tmp_path / "team_mst.csv", Table(columns=["チーム", "ラベル"], rows=[{"チーム": "orcas", "ラベル": "ORCAS"}]))
     write_csv(
