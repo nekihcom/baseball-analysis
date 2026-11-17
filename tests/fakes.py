@@ -18,12 +18,9 @@ class FakeFetcher:
 
 
 class FakeStore:
-    def __init__(self, sheets: dict[str, Table] | None = None, fail_on_replace: set[str] | None = None):
-        self.sheets = dict(sheets or {})
+    def __init__(self, fail_on_replace: set[str] | None = None):
+        self.sheets: dict[str, Table] = {}
         self.fail_on_replace = fail_on_replace or set()
-
-    def read(self, sheet_name: str) -> Table | None:
-        return self.sheets.get(sheet_name)
 
     def replace(self, sheet_name: str, table: Table) -> None:
         if sheet_name in self.fail_on_replace:

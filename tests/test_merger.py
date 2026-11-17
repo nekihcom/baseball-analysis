@@ -52,7 +52,7 @@ class TestColumns:
 
         merged = merge(current, [{"チーム": "orcas", "日時": "2026-01-02", "新列": "b"}], "orcas", None, d)
 
-        assert merged.columns == [*d.columns, "旧列", "新列"]
+        assert merged.columns == [*d.columns[:-1], "旧列", "新列", "収集日時"]
         assert merged.rows[0]["新列"] == ""
         assert merged.rows[1]["旧列"] == ""
 

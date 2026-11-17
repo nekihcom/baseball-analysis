@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Protocol
 
 from ama_baseball.collectors import TeamCollector, decide_target_years
-from ama_baseball.csv_io import write_csv
+from ama_baseball.csv_io import read_csv, write_csv
 from ama_baseball.definitions import COLLECTED_AT, DEFINITIONS, TEAM, YEAR, DataDefinition, Row, Table
+from ama_baseball.display import Masters, drop_unidentified, load_masters, to_sheet
 from ama_baseball.fetcher import Fetcher
 from ama_baseball.merger import merge
 
@@ -15,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class Store(Protocol):
-    def read(self, sheet_name: str) -> Table | None: ...
-
     def replace(self, sheet_name: str, table: Table) -> None: ...
 
 
@@ -42,27 +41,35 @@ def run(
     logger.info("処理を開始します: チーム=%s 全年度=%s 収集日時=%s", ",".join(teams), all_years, collected_at)
 
     try:
-        sheets = {d.key: store.read(d.sheet_name) for d in definitions}
+        currents = {d.key: read_csv(data_dir / d.csv_name) for d in definitions}
     except Exception as e:
-        logger.error("現行シートの読み込みに失敗したため中止します: %s: %s", type(e).__name__, e)
+        logger.error("現行 CSV の読み込みに失敗したため中止します: %s: %s", type(e).__name__, e)
         return 1
     for d in definitions:
-        logger.info("現行シート %s: %s", d.sheet_name, "なし" if sheets[d.key] is None else f"{len(sheets[d.key].rows)} 件")
+        logger.info("現行 CSV %s: %s", d.csv_name, "なし" if currents[d.key] is None else f"{len(currents[d.key].rows)} 件")
 
     try:
-        _backup(sheets, store, data_dir, definitions)
+        masters, missing = load_masters(data_dir)
+    except Exception as e:
+        logger.error("マスタの読み込みに失敗したため中止します: %s: %s", type(e).__name__, e)
+        return 1
+    for name in missing:
+        logger.warning("マスタ %s が無いため、シートの該当列を空欄で出力します", name)
+
+    try:
+        _backup(currents, store, masters, data_dir, definitions)
     except Exception as e:
         logger.error("バックアップに失敗したため中止します: %s: %s", type(e).__name__, e)
         return 1
 
-    tables = {d.key: sheets[d.key] or Table(columns=list(d.columns)) for d in definitions}
+    tables = {d.key: currents[d.key] or Table(columns=list(d.columns)) for d in definitions}
     fetcher.load_robots()
 
     outcomes: dict[str, dict[str, Outcome]] = {}
     for team in teams:
         outcomes[team] = _collect_team(team, all_years, started_at.year, collected_at, fetcher, tables, definitions)
 
-    write_failures = _write_all(tables, store, data_dir, definitions)
+    write_failures = _write_all(tables, store, masters, data_dir, definitions)
 
     for team, team_outcomes in outcomes.items():
         logger.info("[summary] %-10s %s", team, " ".join(f"{k}={o}" for k, o in team_outcomes.items()))
@@ -74,16 +81,16 @@ def run(
     return 1 if failed else 0
 
 
-def _backup(sheets: dict[str, Table | None], store: Store, data_dir: Path, definitions) -> None:
+def _backup(currents: dict[str, Table | None], store: Store, masters: Masters, data_dir: Path, definitions) -> None:
     backup_dir = data_dir / "bks"
     backup_dir.mkdir(parents=True, exist_ok=True)
     for d in definitions:
-        table = sheets[d.key]
+        table = currents[d.key]
         if table is None:
-            logger.info("現行シートが無いため %s のバックアップを作成しません", d.sheet_name)
+            logger.info("現行 CSV が無いため %s のバックアップを作成しません", d.sheet_name)
             continue
         write_csv(backup_dir / d.backup_csv_name, table)
-        store.replace(d.backup_sheet_name, table)
+        store.replace(d.backup_sheet_name, to_sheet(table, masters))
         logger.info("バックアップを作成しました: %s %d 件", d.backup_sheet_name, len(table.rows))
 
 
@@ -123,13 +130,15 @@ def _collect_data(team, all_years, current_year, collected_at, collector, tables
     return Outcome(True, ",".join(f"{y}:{counts.get(str(y), 0)}" for y in sorted(years, reverse=True)) or "-")
 
 
-def _write_all(tables: dict[str, Table], store: Store, data_dir: Path, definitions) -> dict[str, str]:
+def _write_all(tables: dict[str, Table], store: Store, masters: Masters, data_dir: Path, definitions) -> dict[str, str]:
     failures = {}
     for d in definitions:
-        table = tables[d.key]
+        table = drop_unidentified(tables[d.key], masters)
+        if dropped := len(tables[d.key].rows) - len(table.rows):
+            logger.info("背番号と選手名が空欄の %d 件を %s から除外しました", dropped, d.sheet_name)
         try:
             write_csv(data_dir / d.csv_name, table)
-            store.replace(d.sheet_name, table)
+            store.replace(d.sheet_name, to_sheet(table, masters))
             logger.info("書き込みました: %s %d 件", d.sheet_name, len(table.rows))
         except Exception as e:
             logger.error("%s の書き込みに失敗しました: %s: %s", d.sheet_name, type(e).__name__, e)

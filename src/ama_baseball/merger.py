@@ -1,4 +1,4 @@
-from ama_baseball.definitions import TEAM, YEAR, DataDefinition, Row, Table
+from ama_baseball.definitions import COLLECTED_AT, TEAM, YEAR, DataDefinition, Row, Table
 
 
 def merge(current: Table, collected: list[Row], team: str, years: list[int] | None, definition: DataDefinition) -> Table:
@@ -16,8 +16,8 @@ def merge(current: Table, collected: list[Row], team: str, years: list[int] | No
 
 
 def _merge_columns(expected: tuple[str, ...], current: list[str], collected: list[Row]) -> list[str]:
-    columns = list(expected)
+    columns = [c for c in expected if c != COLLECTED_AT]
     for column in [*current, *(c for row in collected for c in row)]:
-        if column not in columns:
+        if column not in columns and column != COLLECTED_AT:
             columns.append(column)
-    return columns
+    return columns + [COLLECTED_AT]

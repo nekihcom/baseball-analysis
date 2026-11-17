@@ -7,7 +7,8 @@ from ama_baseball.collectors import TeamCollector
 TEAM = "チーム"
 COLLECTED_AT = "収集日時"
 YEAR = "年度"
-COMMON_COLUMNS = (TEAM, COLLECTED_AT)
+NUMBER = "背番号"
+PLAYER_NAME = "選手名"
 
 Row = dict[str, str]
 
@@ -60,7 +61,7 @@ def _sort_team_stats(rows: list[Row]) -> list[Row]:
 def _sort_year_stats(rows: list[Row]) -> list[Row]:
     def key(row: Row):
         year = _number_or_none(row.get(YEAR, ""))
-        number = _number_or_none(row.get("背番号", ""))
+        number = _number_or_none(row.get(NUMBER, ""))
         return (row.get(TEAM, ""), -(year or 0), number is None, number or 0)
 
     return sorted(rows, key=key)
@@ -70,7 +71,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
     DataDefinition(
         key="schedule",
         sheet_name="スケジュール",
-        columns=COMMON_COLUMNS + parsers.SCHEDULE_COLUMNS,
+        columns=(TEAM,) + parsers.SCHEDULE_COLUMNS + (COLLECTED_AT,),
         yearly=False,
         collect=lambda tc, _: tc.schedule(),
         sort_rows=_sort_by_date,
@@ -78,7 +79,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
     DataDefinition(
         key="game_results",
         sheet_name="試合結果",
-        columns=COMMON_COLUMNS + parsers.GAME_RESULTS_COLUMNS,
+        columns=(TEAM,) + parsers.GAME_RESULTS_COLUMNS + (COLLECTED_AT,),
         yearly=False,
         collect=lambda tc, _: tc.game_results(),
         sort_rows=_sort_by_date,
@@ -86,7 +87,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
     DataDefinition(
         key="team_stats",
         sheet_name="チーム成績",
-        columns=COMMON_COLUMNS + parsers.TEAM_STATS_HEADERS,
+        columns=(TEAM,) + parsers.TEAM_STATS_HEADERS + (COLLECTED_AT,),
         yearly=False,
         collect=lambda tc, _: tc.team_stats(),
         sort_rows=_sort_team_stats,
@@ -94,7 +95,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
     DataDefinition(
         key="batter_year_stats",
         sheet_name="打者年度別成績",
-        columns=COMMON_COLUMNS + (YEAR, "背番号", "選手名") + parsers.BATTER_HEADERS[1:],
+        columns=(TEAM, YEAR, NUMBER, PLAYER_NAME) + parsers.BATTER_HEADERS[1:] + (COLLECTED_AT,),
         yearly=True,
         collect=lambda tc, years: tc.batter_year_stats(years),
         sort_rows=_sort_year_stats,
@@ -102,7 +103,7 @@ DEFINITIONS: tuple[DataDefinition, ...] = (
     DataDefinition(
         key="pitcher_year_stats",
         sheet_name="投手年度別成績",
-        columns=COMMON_COLUMNS + (YEAR, "背番号", "選手名") + parsers.PITCHER_HEADERS[1:],
+        columns=(TEAM, YEAR, NUMBER, PLAYER_NAME) + parsers.PITCHER_HEADERS[1:] + (COLLECTED_AT,),
         yearly=True,
         collect=lambda tc, years: tc.pitcher_year_stats(years),
         sort_rows=_sort_year_stats,
