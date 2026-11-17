@@ -49,6 +49,23 @@ class TestGameResults:
         assert page.rows[-1]["日時"] == "2024-09-29"
         assert not page.rows[-1]["スコア"].endswith("x")
 
+    def test_雨中止の試合はスコアをハイフンにする(self):
+        html = """
+        <div class="gameListContainer"><ul class="contentList">
+          <li><a class="toDetailLink" href="/teams/x/game/1">
+            <p class="date">2017/7/30<span class="week">（日）</span></p>
+            <p class="opponent"><span class="label">公式戦</span>TOKYO☆MONSTERS</p>
+            <p class="score">0-0</p>
+            <p class="result"><span class="label">雨中止</span></p>
+          </a></li>
+        </ul></div>
+        """
+
+        page = parse_game_results(html)
+
+        assert page.rows[0]["勝敗"] == "雨中止"
+        assert page.rows[0]["スコア"] == "-"
+
     def test_次ページの有無と件数表示を読み取る(self, load_fixture):
         page = parse_game_results(load_fixture("game_page2.html"))
 
